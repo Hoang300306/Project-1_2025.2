@@ -7,7 +7,7 @@ from src.result.algorithm_parameter import AlgorithmParameter
 from src.result.algorithm_result import AlgorithmResult
 from src.result.algorithm_step import AlgorithmStep
 
-class bfs_algorithm(GraphAlgorithm):
+class BFSAlgorithm(GraphAlgorithm):
     def get_name(self) -> str:
         return "BFS"
 

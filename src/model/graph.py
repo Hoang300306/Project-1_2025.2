@@ -32,7 +32,6 @@ class Graph:
             reverse_edge = Edge(target, source, weight)
             self.adjacency[target].append(reverse_edge)
 
-
     def get_vertex(self, vertex_id: int) -> Vertex:
         return self.vertices.get(vertex_id)
     

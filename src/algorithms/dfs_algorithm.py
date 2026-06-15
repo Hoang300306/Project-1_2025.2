@@ -7,7 +7,7 @@ from src.result.algorithm_result import AlgorithmResult
 from src.result.algorithm_step import AlgorithmStep
 
 
-class dfs_algorithm(GraphAlgorithm):
+class DFSAlgorithm(GraphAlgorithm):
 
     def get_name(self) -> str:
         return "DFS"
