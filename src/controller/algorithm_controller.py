@@ -31,17 +31,17 @@ class AlgorithmController:
         self.register_algorithm('prim', PrimAlgorithm())
         self.register_algorithm('kruskal', KruskalAlgorithm())
         
-        self.register_algorithm("bellman_ford", BellmanFordAlgorithm())
+        #self.register_algorithm("bellman_ford", BellmanFordAlgorithm())
         self.register_algorithm("bellman-ford", BellmanFordAlgorithm())
 
-        self.register_algorithm("floyd_warshall", FloydWarshallAlgorithm())
+        #self.register_algorithm("floyd_warshall", FloydWarshallAlgorithm())
         self.register_algorithm("floyd-warshall", FloydWarshallAlgorithm())
-        self.register_algorithm("floyd", FloydWarshallAlgorithm())
+        #self.register_algorithm("floyd", FloydWarshallAlgorithm())
 
         self.register_algorithm("topological_sort", TopologicalSortAlgorithm())
-        self.register_algorithm("topological", TopologicalSortAlgorithm())
-        self.register_algorithm("topo", TopologicalSortAlgorithm())
-        self.register_algorithm("toposort", TopologicalSortAlgorithm())
+        #self.register_algorithm("topological", TopologicalSortAlgorithm())
+        #self.register_algorithm("topo", TopologicalSortAlgorithm())
+        #self.register_algorithm("toposort", TopologicalSortAlgorithm())
 
     def register_algorithm(self, name: str, algorithm: GraphAlgorithm) -> None:
         """

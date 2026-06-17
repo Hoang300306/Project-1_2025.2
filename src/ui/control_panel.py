@@ -1,4 +1,4 @@
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -12,7 +12,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QCheckBox,
-    QSpinBox
+    QSpinBox,
+    QScrollArea,
+    QSizePolicy
 )
 
 class ControlPanel(QWidget):
@@ -49,7 +51,7 @@ class ControlPanel(QWidget):
 
     def __init__(self):
         super().__init__()
-
+        #self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self.graph_input = QTextEdit()
         self.graph_input.setPlaceholderText(
             "Nhập đồ thị theo format:\n"
@@ -93,8 +95,8 @@ class ControlPanel(QWidget):
         self.load_file_button = QPushButton("Load File")
         self.save_file_button = QPushButton("Save File")
         self.run_button = QPushButton("Run Algorithm")
-        self.export_result_button = QPushButton("Export Result")
-        self.export_image_button = QPushButton("Export Image")
+        #self.export_result_button = QPushButton("Export Result")
+        #self.export_image_button = QPushButton("Export Image")
         self.clear_button = QPushButton("Clear")
         self.reset_layout_button = QPushButton("Reset Layout")
 
@@ -175,7 +177,12 @@ class ControlPanel(QWidget):
         self._update_parameter_fields(self.algorithm_combo.currentText())
 
     def _setup_ui(self) -> None:
-        main_layout = QVBoxLayout(self)
+        #main_layout = QVBoxLayout(self)
+        content_widget = QWidget()
+        main_layout = QVBoxLayout(content_widget)
+        main_layout.setSpacing(6)
+        main_layout.setContentsMargins(4, 4, 4, 4)
+
 
         graph_group = QGroupBox("Graph Input")
         graph_layout = QVBoxLayout(graph_group)
@@ -198,6 +205,7 @@ class ControlPanel(QWidget):
         file_button_layout.addWidget(self.load_sample_button)
         file_button_layout.addWidget(self.load_file_button)
         file_button_layout.addWidget(self.save_file_button)
+        file_button_layout.addWidget(self.generate_random_button)
         file_button_layout.addWidget(self.clear_button)
         file_button_layout.addWidget(self.reset_layout_button)
 
@@ -288,11 +296,14 @@ class ControlPanel(QWidget):
         debug_layout.addWidget(QLabel("Speed:"))
         debug_layout.addWidget(self.speed_input)
 
+        random_group.setVisible(False)      # THÊM: ẩn mặc định
+        self.random_group = random_group
+
         main_layout.addWidget(graph_group)
         main_layout.addWidget(random_group)
         main_layout.addWidget(algorithm_group)
-        main_layout.addWidget(self.export_result_button)
-        main_layout.addWidget(self.export_image_button)
+        #main_layout.addWidget(self.export_result_button)
+        #main_layout.addWidget(self.export_image_button)
         #main_layout.addWidget(algorithm_info_group)
         #main_layout.addWidget(theme_group)
         #main_layout.addWidget(graph_view_group)
@@ -301,14 +312,29 @@ class ControlPanel(QWidget):
         main_layout.addWidget(debug_group)
         main_layout.addStretch()
 
+        scroll = QScrollArea()
+        scroll.setWidget(content_widget)
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setMinimumWidth(320)
+       
+
+        # Layout ngoài cùng của ControlPanel
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.addWidget(scroll)
+        self.setMinimumWidth(320)
+        
+
     def _connect_signals(self) -> None:
         self.run_button.clicked.connect(self.run_requested.emit)
-        self.export_result_button.clicked.connect(self.export_result_requested.emit)
-        self.export_image_button.clicked.connect(self.export_image_requested.emit)
+        #self.export_result_button.clicked.connect(self.export_result_requested.emit)
+        #self.export_image_button.clicked.connect(self.export_image_requested.emit)
         self.load_sample_button.clicked.connect(self.load_sample_requested.emit)
         self.load_file_button.clicked.connect(self.load_file_requested.emit)
         self.save_file_button.clicked.connect(self.save_file_requested.emit)
-        self.generate_random_button.clicked.connect(self.generate_random_requested.emit)
+        self.generate_random_button.clicked.connect(self._toggle_random_group)
         self.clear_button.clicked.connect(self.clear_requested.emit)
         self.reset_layout_button.clicked.connect(self.reset_layout_requested.emit)
 
@@ -449,6 +475,9 @@ class ControlPanel(QWidget):
             self._update_parameter_fields(algorithm_names[0])
             self.algorithm_changed.emit(algorithm_names[0])
 
+
+    def _toggle_random_group(self) -> None:
+        self.generate_random_requested.emit()
 
     def set_algorithm_info(self, text: str) -> None:
         self.algorithm_info_text.setPlainText(text)

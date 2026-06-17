@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QKeySequence, QScreen
 from PySide6.QtCore import Qt, QTimer, QSettings
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -11,7 +11,14 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
     QWidget,
-    QToolBar
+    QToolBar,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QSpinBox,
+    QCheckBox,
+    QApplication,
+    QScrollArea
 )
 from src.model.graph import Graph
 from src.service.random_graph_generator import RandomGraphGenerator
@@ -28,7 +35,16 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Graph Algorithm Visualizer")
-        self.resize(1200, 750)
+        #self.resize(1200, 750)
+        screen = QApplication.primaryScreen()
+        screen_size = screen.availableGeometry()
+        width = int(screen_size.width() * 0.85)
+        height = int(screen_size.height() * 0.85)
+        self.resize(width, height)
+        self.move(
+            (screen_size.width() - width) // 2,
+            (screen_size.height() - height) // 2
+        )
 
         self.settings = QSettings(
             "HoangProjects",
@@ -78,32 +94,101 @@ class MainWindow(QMainWindow):
         self._load_sample_graph()
 
     def _setup_ui(self) -> None:
+        screen = QApplication.primaryScreen()
+        screen_size = screen.availableGeometry()
+        width = int(screen_size.width() * 0.85)
+        height = int(screen_size.height() * 0.85)
+
+        # Splitter ngang chính
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
         left_widget = self.control_panel
 
+        # Phần trên cột phải: Graph Visualization
+        top_widget = QWidget()
+        top_layout = QVBoxLayout(top_widget)
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.addWidget(QLabel("Graph Visualization"))
+        top_layout.addWidget(self.graph_view)
+
+        # Phần dưới cột phải: 3 ô dùng chung QScrollArea
+        bottom_content = QWidget()
+        bottom_layout = QVBoxLayout(bottom_content)
+        bottom_layout.setContentsMargins(4, 4, 4, 4)
+        bottom_layout.setSpacing(4)
+
+        self.graph_info_text.setMinimumHeight(200)
+        self.result_text.setMinimumHeight(120)
+        self.steps_text.setMinimumHeight(200)
+        self.graph_info_text.setMaximumHeight(16777215)
+        self.result_text.setMaximumHeight(16777215)
+
+        bottom_layout.addWidget(QLabel("Graph Information"))
+        bottom_layout.addWidget(self.graph_info_text)
+        bottom_layout.addWidget(QLabel("Result"))
+        bottom_layout.addWidget(self.result_text)
+        bottom_layout.addWidget(QLabel("Current Algorithm Step"))
+        bottom_layout.addWidget(self.steps_text)
+
+        bottom_scroll = QScrollArea()
+        bottom_scroll.setWidget(bottom_content)
+        bottom_scroll.setWidgetResizable(True)
+        bottom_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        bottom_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        bottom_scroll.setMinimumHeight(150)
+
+        # Splitter dọc cho cột phải
+        vertical_splitter = QSplitter(Qt.Orientation.Vertical)
+        vertical_splitter.addWidget(top_widget)
+        vertical_splitter.addWidget(bottom_scroll)
+        vertical_splitter.setCollapsible(0, False)
+        vertical_splitter.setCollapsible(1, False)
+        vertical_splitter.setSizes([int(height * 0.65), int(height * 0.35)])
+        vertical_splitter.setStretchFactor(0, 65)
+        vertical_splitter.setStretchFactor(1, 35)
+
+        # Cột phải chứa vertical_splitter
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(4)
+        right_layout.addWidget(vertical_splitter)
 
-        right_layout.addWidget(QLabel("Graph Visualization"))
-        right_layout.addWidget(self.graph_view)
-
-        right_layout.addWidget(QLabel("Graph Information"))
-        right_layout.addWidget(self.graph_info_text)
-
-        right_layout.addWidget(QLabel("Result"))
-        right_layout.addWidget(self.result_text)
-
-        right_layout.addWidget(QLabel("Current Algorithm Step"))
-        right_layout.addWidget(self.steps_text)
-
+        # Splitter ngang
         splitter.addWidget(left_widget)
         splitter.addWidget(right_widget)
-
-        splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(1, 2)
+        left_widget.setMinimumWidth(320)
+        splitter.setCollapsible(0, False)
+        splitter.setCollapsible(1, False)
+        splitter.setSizes([int(width * 0.22), int(width * 0.78)])
+        splitter.setStretchFactor(0, 22)
+        splitter.setStretchFactor(1, 78)
 
         self.setCentralWidget(splitter)
+
+    
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self._adjust_splitter_sizes()
+
+    def _adjust_splitter_sizes(self) -> None:
+        w = self.width()
+        h = self.height()
+        
+        # Tìm splitter ngang
+        splitter = self.centralWidget()
+        if isinstance(splitter, QSplitter):
+            splitter.setSizes([int(w * 0.30), int(w * 0.70)])
+            
+            # Tìm splitter dọc trong cột phải
+            right_widget = splitter.widget(1)
+            if right_widget:
+                for i in range(right_widget.layout().count()):
+                    item = right_widget.layout().itemAt(i)
+                    if item and isinstance(item.widget(), QSplitter):
+                        vertical_splitter = item.widget()
+                        vertical_splitter.setSizes([int(h * 0.65), int(h * 0.35)])
+                        break
 
     def _connect_signals(self) -> None:
         self.control_panel.run_requested.connect(self._run_algorithm)
@@ -113,8 +198,8 @@ class MainWindow(QMainWindow):
         self.control_panel.generate_random_requested.connect(self._generate_random_graph)
         self.control_panel.clear_requested.connect(self._clear_ui)
         self.control_panel.reset_layout_requested.connect(self._reset_layout)
-        self.control_panel.export_result_requested.connect(self._export_result_to_file)
-        self.control_panel.export_image_requested.connect(self._export_graph_image)
+        #self.control_panel.export_result_requested.connect(self._export_result_to_file)
+        #self.control_panel.export_image_requested.connect(self._export_graph_image)
 
         self.control_panel.algorithm_changed.connect(self._update_algorithm_info)
         self.control_panel.theme_changed.connect(self._apply_theme)
@@ -179,30 +264,68 @@ class MainWindow(QMainWindow):
             self._show_error("Lỗi đọc file", str(error))
 # sinh dothi ngau nhien
     def _generate_random_graph(self) -> None:
-        try:
-            number_of_vertices = self.control_panel.get_random_vertex_count()
-            number_of_edges = self.control_panel.get_random_edge_count()
-            directed = self.control_panel.is_random_directed()
-            weighted = self.control_panel.is_random_weighted()
-            min_weight = self.control_panel.get_random_min_weight()
-            max_weight = self.control_panel.get_random_max_weight()
-            allow_negative = self.control_panel.is_random_negative_allowed()
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Generate Random Graph")
+        dialog.setMinimumWidth(300)
 
+        layout = QFormLayout(dialog)
+
+        vertex_input = QSpinBox()
+        vertex_input.setRange(1, 100)
+        vertex_input.setValue(self.control_panel.get_random_vertex_count())
+
+        edge_input = QSpinBox()
+        edge_input.setRange(0, 1000)
+        edge_input.setValue(self.control_panel.get_random_edge_count())
+
+        directed_cb = QCheckBox("Directed")
+        directed_cb.setChecked(self.control_panel.is_random_directed())
+
+        weighted_cb = QCheckBox("Weighted")
+        weighted_cb.setChecked(self.control_panel.is_random_weighted())
+
+        min_weight = QSpinBox()
+        min_weight.setRange(-100, 100)
+        min_weight.setValue(self.control_panel.get_random_min_weight())
+
+        max_weight = QSpinBox()
+        max_weight.setRange(-100, 100)
+        max_weight.setValue(self.control_panel.get_random_max_weight())
+
+        allow_negative_cb = QCheckBox("Allow negative weight")
+        allow_negative_cb.setChecked(self.control_panel.is_random_negative_allowed())
+
+        layout.addRow("Number of vertices:", vertex_input)
+        layout.addRow("Number of edges:", edge_input)
+        layout.addRow("", directed_cb)
+        layout.addRow("", weighted_cb)
+        layout.addRow("Min weight:", min_weight)
+        layout.addRow("Max weight:", max_weight)
+        layout.addRow("", allow_negative_cb)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addRow(buttons)
+
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        try:
             graph_text = RandomGraphGenerator.generate_as_text(
-                number_of_vertices=number_of_vertices,
-                number_of_edges=number_of_edges,
-                directed=directed,
-                weighted=weighted,
-                min_weight=min_weight,
-                max_weight=max_weight,
-                allow_negative_weight=allow_negative
+                number_of_vertices=vertex_input.value(),
+                number_of_edges=edge_input.value(),
+                directed=directed_cb.isChecked(),
+                weighted=weighted_cb.isChecked(),
+                min_weight=min_weight.value(),
+                max_weight=max_weight.value(),
+                allow_negative_weight=allow_negative_cb.isChecked()
             )
 
             self.control_panel.set_graph_text(graph_text)
-
-            # Khi sinh đồ thị mới thì reset layout để tránh dùng tọa độ của graph cũ.
             self.graph_view.vertex_positions.clear()
-
             self._parse_and_draw_graph()
             self._clear_algorithm_state()
             self._show_success("Random graph generated successfully.")
@@ -1053,7 +1176,7 @@ class MainWindow(QMainWindow):
         view_menu.addAction(fit_view_action)
         view_menu.addAction(reset_zoom_action)
 
-        algorithm_menu = menu_bar.addMenu("Algorithm")
+        algorithm_menu = menu_bar.addMenu("Debug")
 
         run_action = QAction("Run Algorithm", self)
         run_action.setShortcut(QKeySequence("F5"))
@@ -1157,6 +1280,10 @@ class MainWindow(QMainWindow):
             "Save",
             self._save_graph_to_file
         )
+
+        toolbar.addSeparator()
+
+        self._add_toolbar_action(toolbar, "Random Graph", self._generate_random_graph)  # THÊM
 
         toolbar.addSeparator()
 
