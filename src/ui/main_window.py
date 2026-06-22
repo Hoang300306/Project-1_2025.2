@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import time
 from PySide6.QtGui import QAction, QKeySequence, QScreen
 from PySide6.QtCore import Qt, QTimer, QSettings
 from PySide6.QtWidgets import (
@@ -343,6 +343,8 @@ class MainWindow(QMainWindow):
         self.result_text.clear()
         self.steps_text.clear()
 
+        self.graph_view.clear_runtime()
+
         self._update_algorithm_info()
         self._show_success('Workspace cleared.')
 
@@ -354,6 +356,8 @@ class MainWindow(QMainWindow):
         self.control_panel.set_step_info(0, 0)
         self.result_text.clear()
         self.steps_text.clear()
+
+        self.graph_view.clear_runtime()
 
     def _parse_and_draw_graph(self) -> bool:
         graph_text = self.control_panel.get_graph_text()
@@ -395,12 +399,19 @@ class MainWindow(QMainWindow):
             target_vertex=target_vertex
         )
 
+        start_time = time.perf_counter()
+
         result = self.algorithm_controller.run_algorithm(
             algorithm_name,
             self.current_graph,
             params
         )
 
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        self.graph_view.set_runtime(elapsed_ms)
+        # ---- ĐO THỜI GIAN KẾT THÚC ----
+
+    
         self.current_result = result
         if result.success:
             self._show_success(f"Algorithm {result.algorithm_name} finished successfully.")

@@ -20,7 +20,10 @@ from PySide6.QtWidgets import (
     QGraphicsTextItem,
     QGraphicsView,
     QMenu,
+    QLabel,
+    
 )
+
 
 from src.model.graph import Graph
 
@@ -154,6 +157,17 @@ class GraphView(QGraphicsView):
         self.current_highlighted_edges: set[Tuple[int, int]] = set()
 
         self.is_redrawing = False
+
+        self.time_label = QLabel("", self)
+        self.time_label.setStyleSheet("""
+            background-color: rgba(0, 0, 0, 160);
+            color: #f0f0f0;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 6px;
+        """)
+        self.time_label.setVisible(False)
 
     def draw_graph(
         self,
@@ -777,4 +791,25 @@ class GraphView(QGraphicsView):
         elif selected_action == remove_vertex_action:
             self.remove_vertex_requested.emit(vertex_id)
     
-  
+    def set_runtime(self, elapsed_ms: float) -> None:
+        if elapsed_ms < 1000:
+            text = f"Runtime: {elapsed_ms:.2f} ms"
+        else:
+            text = f"Runtime: {elapsed_ms / 1000:.3f} s"
+        self.time_label.setText(text)
+        self.time_label.adjustSize()
+        self.time_label.setVisible(True)
+        self._reposition_time_label()
+
+    def clear_runtime(self) -> None:
+        self.time_label.setVisible(False)
+
+    def _reposition_time_label(self) -> None:
+        margin = 10
+        x = self.width() - self.time_label.width() - margin
+        self.time_label.move(x, margin)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        if self.time_label.isVisible():
+            self._reposition_time_label()
